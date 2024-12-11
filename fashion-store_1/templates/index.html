@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Search System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #f1f5f9;
+            --background-color: #ffffff;
+            --text-color: #334155;
+            --border-color: #e2e8f0;
+            --accent-color: #818cf8;
+            --success-color: #22c55e;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+
+        .header {
+            background: var(--background-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+            background-color: var(--secondary-color);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: flex;
+            gap: 2rem;
+        }
+
+        .section {
+            flex: 1;
+            background: var(--background-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+        }
+
+        .section h2, .section h3 {
+            color: var(--text-color);
+            margin: 0 0 1.5rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .image-container {
+            width: 100%;
+            height: 400px;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--secondary-color);
+            transition: all 0.2s ease;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: calc(var(--border-radius) - 4px);
+        }
+
+        .draggable {
+            cursor: move;
+            transition: transform 0.2s ease;
+        }
+
+        .draggable:hover {
+            transform: scale(1.02);
+        }
+
+        .drop-zone {
+            background-color: var(--secondary-color);
+        }
+
+        .drop-zone.drag-over {
+            background-color: rgba(99, 102, 241, 0.1);
+            border: 2px dashed var(--primary-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            width: 100%;
+            margin: 1rem 0;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .results {
+            margin-top: 1.5rem;
+        }
+
+        .probability-section {
+            margin: 1.5rem 0;
+            background: var(--background-color);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .probability-bar-container {
+            width: 100%;
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .probability-bar {
+            height: 8px;
+            background-color: var(--primary-color);
+            transition: width 0.6s ease;
+        }
+
+        .probability-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .similar-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .similar-image-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+        }
+
+        .similar-image-card:hover {
+            transform: scale(1.05);
+        }
+
+        .similar-image-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
+
+        .distance-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.25rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .similar-image-card:hover .distance-label {
+            opacity: 1;
+        }
+
+        .category-label {
+            background-color: var(--success-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+
+        #dropText {
+            color: #64748b;
+            font-size: 1rem;
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .loading {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .section {
+                margin: 0.5rem 0;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">Visual Search</div>
+            <nav class="nav-links">
+                <a href="#">Home</a>
+                <a href="#">Gallery</a>
+                <a href="#">About</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>Random Image Generator</h2>
+            <div id="gallery" class="image-container">
+                <img id="randomImage" class="draggable" draggable="true" alt="Random Image">
+                <div class="loading"></div>
+            </div>
+            <button onclick="loadRandomImage()">
+                Pick Random Image
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>Analysis Results</h2>
+            <div id="dropZone" class="image-container drop-zone">
+                <div id="dropText">Drag and drop image here for analysis</div>
+                <div class="loading"></div>
+            </div>
+            <div class="results">
+                <div id="category" class="category-label">
+                    Ready for analysis
+                </div>
+                <div class="probability-section">
+                    <h3>Classification Probabilities</h3>
+                    <div id="probabilities">
+                        <!-- Probabilities will be inserted here -->
+                    </div>
+                </div>
+                <h3>"You may also like" Recommendation</h3>
+                <div id="similarImages" class="similar-images">
+                    <!-- Similar images will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoading = false;
+
+        function showLoading(container) {
+            const loading = container.querySelector('.loading');
+            if (loading) {
+                loading.style.display = 'block';
+            }
+            isLoading = true;
+        }
+
+        function hideLoading(container) {
+            const loading = container.querySelector('.loading');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+            isLoading = false;
+        }
+
+        function loadRandomImage() {
+            const gallery = document.getElementById('gallery');
+            showLoading(gallery);
+            
+            fetch('/get_random_image')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const img = document.getElementById('randomImage');
+                        img.src = data.image_url;
+                        img.onload = () => hideLoading(gallery);
+                    }
+                })
+                .catch(() => hideLoading(gallery));
+        }
+
+        // Initial load
+        loadRandomImage();
+
+        // Drag and drop functionality
+        const draggableImg = document.getElementById('randomImage');
+        const dropZone = document.getElementById('dropZone');
+
+        draggableImg.addEventListener('dragstart', (e) => {
+            if (!isLoading) {
+                e.dataTransfer.setData('text/plain', e.target.src);
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!isLoading) {
+                dropZone.classList.add('drag-over');
+            }
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (isLoading) return;
+
+            dropZone.classList.remove('drag-over');
+            const imageSrc = e.dataTransfer.getData('text/plain');
+            
+            const img = document.createElement('img');
+            img.src = imageSrc;
+            dropZone.innerHTML = '';
+            dropZone.appendChild(img);
+            
+            showLoading(dropZone);
+
+            fetch(imageSrc)
+                .then(res => res.blob())
+                .then(blob => {
+                    const formData = new FormData();
+                    formData.append('image', blob);
+
+                    return fetch('/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading(dropZone);
+                    if (data.status === 'success') {
+                        // Update category
+                        const category = document.getElementById('category');
+                        category.style.opacity = '0';
+                        setTimeout(() => {
+                            const topPrediction = data.results.classification.all_probabilities[0];
+                            category.textContent = `Category: ${topPrediction.category} (${topPrediction.percentage})`;
+                            category.style.opacity = '1';
+                        }, 300);
+
+                        // Update probability bars
+                        const probabilitiesContainer = document.getElementById('probabilities');
+                        probabilitiesContainer.innerHTML = '';
+                        data.results.classification.all_probabilities.forEach((prob, index) => {
+                            const probDiv = document.createElement('div');
+                            probDiv.innerHTML = `
+                                <div class="probability-label">
+                                    <span>${prob.category}</span>
+                                    <span>${prob.percentage}</span>
+                                </div>
+                                <div class="probability-bar-container">
+                                    <div class="probability-bar" 
+                                         style="width: 0%"
+                                         data-width="${prob.probability * 100}"></div>
+                                </div>
+                            `;
+                            probabilitiesContainer.appendChild(probDiv);
+                            
+                            // Animate the bar after a short delay
+                            setTimeout(() => {
+                                const bar = probDiv.querySelector('.probability-bar');
+                                bar.style.width = `${prob.probability * 100}%`;
+                            }, 100 * index);
+                        });
+
+                        // Update similar images
+                        const similarImagesContainer = document.getElementById('similarImages');
+                        similarImagesContainer.innerHTML = '';
+                        data.results.similar_images.forEach((img, index) => {
+                            const imageCard = document.createElement('div');
+                            imageCard.className = 'similar-image-card';
+                            
+                            const imgElement = document.createElement('img');
+                            imgElement.src = img.url;
+                            
+                            const distanceLabel = document.createElement('div');
+                            distanceLabel.className = 'distance-label';
+                            distanceLabel.textContent = `Distance: ${img.distance.toFixed(4)}`;
+                            
+                            imageCard.appendChild(imgElement);
+                            imageCard.appendChild(distanceLabel);
+                            
+                            similarImagesContainer.appendChild(imageCard);
+                            
+                            // Animate fade in
+                            setTimeout(() => {
+                                imageCard.style.opacity = '1';
+                            }, index * 100);
+                        });
+                    }
+                })
+                .catch(() => hideLoading(dropZone));
+
+            loadRandomImage();
+        });
+    </script>
+</body>
+</html>
